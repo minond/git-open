@@ -1,0 +1,7 @@
+`git-open` opens things for you... well just Gitlab MRs for now, but maybe more
+to come in the future.
+
+Add a new alias to your git config file for convenience:
+
+    [alias]
+      open = !git-open
