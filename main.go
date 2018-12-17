@@ -17,7 +17,6 @@ func getBranch() (string, error) {
 
 	out := &bytes.Buffer{}
 	cmd := exec.Command("git", "branch")
-	cmd.Dir = "/Users/marcosmindon/code/go/src/gitlab.mx.com/mx/atlas"
 	cmd.Stdout = out
 	if err := cmd.Run(); err != nil {
 		return "", err
@@ -78,7 +77,6 @@ func getProjectName() (string, error) {
 
 	out := &bytes.Buffer{}
 	cmd := exec.Command("git", "remote", "-v")
-	cmd.Dir = "/Users/marcosmindon/code/go/src/gitlab.mx.com/mx/atlas"
 	cmd.Stdout = out
 	if err := cmd.Run(); err != nil {
 		return "", err
