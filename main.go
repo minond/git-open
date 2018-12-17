@@ -73,8 +73,22 @@ func getMRURL(client *gitlab.Client, projID, branch string) (string, error) {
 }
 
 func getProjectName() (string, error) {
-	var url string
+	url, err := getProjectRemote()
+	if err != nil {
+		return "", err
+	}
+	return parseRepoURLProjectName(url), nil
+}
 
+func getProjectHomeURL() (string, error) {
+	url, err := getProjectRemote()
+	if err != nil {
+		return "", err
+	}
+	return parseRepoURLProjectURL(url), nil
+}
+
+func getProjectRemote() (string, error) {
 	out := &bytes.Buffer{}
 	cmd := exec.Command("git", "remote", "-v")
 	cmd.Stdout = out
@@ -92,22 +106,23 @@ func getProjectName() (string, error) {
 		if len(parts) < 3 {
 			continue
 		} else if parts[2] == "(push)" {
-			url = parts[1]
-			break
+			return parts[1], nil
 		}
 	}
 
-	if url == "" {
-		return "", errors.New("unable to find remote push url")
-	}
-
-	return parseRepoURLProjectName(url), nil
+	return "", errors.New("unable to find remote push url")
 }
 
 func parseRepoURLProjectName(rawurl string) string {
 	hostAndProject := strings.SplitN(rawurl, ":", 2)
 	orgAndName := strings.SplitN(hostAndProject[1], "/", 2)
 	return strings.TrimSuffix(orgAndName[1], ".git")
+}
+
+// git@github.com:minond/git-open
+func parseRepoURLProjectURL(rawurl string) string {
+	userAndRest := strings.SplitN(rawurl, "@", 2)
+	return "https://" + strings.TrimSuffix(strings.Replace(userAndRest[1], ":", "/", 1), ".git")
 }
 
 func load(url string) error {
@@ -143,14 +158,35 @@ func stringmust(str string, err error) string {
 	return str
 }
 
-func main() {
+func getGitlabClient() *gitlab.Client {
 	client := gitlab.NewClient(nil, os.Getenv("GITLAB_API_KEY"))
 	if os.Getenv("GITLAB_HOST") != "" {
 		client.SetBaseURL(os.Getenv("GITLAB_HOST"))
 	}
+	return client
+}
 
-	branch := stringmust(getBranch())
-	projID := stringmust(getProjectID(client))
-	mrURL := stringmust(getMRURL(client, projID, branch))
-	must(load(mrURL))
+func main() {
+	arg := "home"
+	if len(os.Args) > 1 {
+		arg = os.Args[1]
+	}
+
+	switch arg {
+	case "mr":
+		client := getGitlabClient()
+		branch := stringmust(getBranch())
+		projID := stringmust(getProjectID(client))
+		mrURL := stringmust(getMRURL(client, projID, branch))
+		must(load(mrURL))
+
+	case "home":
+		fallthrough
+	case "homepage":
+		homeURL := stringmust(getProjectHomeURL())
+		must(load(homeURL))
+
+	default:
+		log.Fatalf("invalid argument `%s`\n", arg)
+	}
 }
