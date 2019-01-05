@@ -39,6 +39,11 @@ func getProjectID(client *gitlab.Client) (string, error) {
 		return "", err
 	}
 
+	org, err := getProjectOrg()
+	if err != nil {
+		return "", err
+	}
+
 	opt := &gitlab.ListProjectsOptions{
 		Search: stringptr(name),
 	}
@@ -47,10 +52,16 @@ func getProjectID(client *gitlab.Client) (string, error) {
 	if err != nil {
 		return "", err
 	} else if len(projs) == 0 {
-		return "", errors.New("unable to find project")
+		return "", errors.New("got back no projects matching name")
 	}
 
-	return strconv.Itoa(projs[0].ID), nil
+	for _, proj := range projs {
+		if strings.HasSuffix(proj.SSHURLToRepo, org+"/"+name+".git") {
+			return strconv.Itoa(proj.ID), nil
+		}
+	}
+
+	return "", errors.New("unable to find project")
 }
 
 func getMRURL(client *gitlab.Client, projID, branch string) (string, error) {
@@ -78,6 +89,14 @@ func getProjectName() (string, error) {
 		return "", err
 	}
 	return parseRepoURLProjectName(url), nil
+}
+
+func getProjectOrg() (string, error) {
+	url, err := getProjectRemote()
+	if err != nil {
+		return "", err
+	}
+	return parseRepoURLProjectOrg(url), nil
 }
 
 func getProjectHomeURL() (string, error) {
@@ -117,6 +136,12 @@ func parseRepoURLProjectName(rawurl string) string {
 	hostAndProject := strings.SplitN(rawurl, ":", 2)
 	orgAndName := strings.SplitN(hostAndProject[1], "/", 2)
 	return strings.TrimSuffix(orgAndName[1], ".git")
+}
+
+func parseRepoURLProjectOrg(rawurl string) string {
+	hostAndProject := strings.SplitN(rawurl, ":", 2)
+	orgAndName := strings.SplitN(hostAndProject[1], "/", 2)
+	return orgAndName[0]
 }
 
 // git@github.com:minond/git-open
