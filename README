@@ -1,5 +1,8 @@
-`git-open` opens things for you... well just Gitlab MRs for now, but maybe more
-to come in the future.
+`git-open` opens things for you, such as:
+
+    - `git open` for loading a repo's web homepage
+    - `git open mr` for loading a Gitlab MR for the current branch
+    - `git open <file>` for loading any file on the web ui
 
 Add a new alias to your git config file for convenience:
 
