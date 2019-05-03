@@ -212,6 +212,7 @@ func main() {
 		must(load(homeURL))
 
 	default:
-		log.Fatalf("invalid argument `%s`\n", arg)
+		homeURL := stringmust(getProjectHomeURL())
+		must(load(homeURL + "/blob/master/" + arg))
 	}
 }
